@@ -33,7 +33,7 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete }: BoletoTab
       case 'VENCIDO':
         return 'destructive';
       case 'PENDENTE':
-        return 'secondary';
+        return 'warning';
       default:
         return 'secondary';
     }

@@ -17,14 +17,14 @@ const Reports = () => {
   const totalPago = boletos
     .filter((b) => b.status === 'PAGO')
     .reduce((sum, b) => sum + b.valor, 0);
-  
+
   const totalPendente = boletos
     .filter((b) => b.status === 'PENDENTE')
     .reduce((sum, b) => sum + b.valor, 0);
 
   // Group by category
   const categoryData = boletos.reduce((acc: any, boleto) => {
-    const category = boleto.categoria || 'Sem categoria';
+    const category = boleto.categoria?.nome || 'Sem categoria';
     if (!acc[category]) {
       acc[category] = 0;
     }

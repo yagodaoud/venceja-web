@@ -25,7 +25,7 @@ export const BoletoCard = ({ boleto, onMarkPaid, onEdit, onDelete }: BoletoCardP
       case 'VENCIDO':
         return 'destructive';
       case 'PENDENTE':
-        return 'secondary';
+        return 'warning';
       default:
         return 'secondary';
     }
