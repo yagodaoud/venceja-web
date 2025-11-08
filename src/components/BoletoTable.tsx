@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, FileText } from 'lucide-react';
+import { CheckCircle, FileText, Copy } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,15 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete, onViewRecei
     }).format(value);
   };
 
+  const handleCopyBarcode = async (codigoBarras: string) => {
+    try {
+      await navigator.clipboard.writeText(codigoBarras);
+      toast.success('Código de barras copiado para a área de transferência!');
+    } catch (error) {
+      toast.error('Erro ao copiar código de barras');
+    }
+  };
+
   return (
     <div className="hidden md:block rounded-lg border bg-card">
       <Table>
@@ -88,6 +98,17 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete, onViewRecei
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
+                  {boleto.codigoBarras && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopyBarcode(boleto.codigoBarras!)}
+                      className="gap-2"
+                      title={t('codigoBarras')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
                   <TableActionButtons
                     onEdit={() => onEdit(boleto)}
                     onDelete={() => onDelete(boleto)}
