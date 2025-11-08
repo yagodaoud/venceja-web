@@ -41,7 +41,7 @@ export const DeleteCategoryModal = ({ categoria, isOpen, onClose }: DeleteCatego
         <AlertDialogHeader>
           <AlertDialogTitle>{t('confirmarExclusao')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('confirmarExclusaoDescricao')} A categoria <strong>"{categoria.nome}"</strong> será excluída permanentemente.
+            {t('confirmarExclusaoDescricaoCategoria')} A categoria <strong>"{categoria.nome}"</strong> será excluída permanentemente.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

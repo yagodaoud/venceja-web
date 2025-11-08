@@ -41,7 +41,7 @@ export const DeleteBoletoModal = ({ boleto, isOpen, onClose }: DeleteBoletoModal
         <AlertDialogHeader>
           <AlertDialogTitle>{t('confirmarExclusao')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('confirmarExclusaoDescricao')} O boleto <strong>"{boleto.fornecedor}"</strong> será excluído permanentemente.
+            {t('confirmarExclusaoDescricaoBoleto')} O boleto <strong>"{boleto.fornecedor}"</strong> será excluído permanentemente.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
