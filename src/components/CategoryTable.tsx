@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit, Trash2 } from 'lucide-react';
 import { Categoria } from '@/types';
 import {
   Table,
@@ -11,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { TableActionButtons } from '@/components/TableActionButtons';
 
 interface CategoryTableProps {
   categorias: Categoria[];
@@ -52,26 +51,11 @@ export const CategoryTable = ({ categorias, onEdit, onDelete }: CategoryTablePro
                   : '-'}
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(categoria)}
-                    className="gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    {t('editar')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(categoria)}
-                    className="gap-2 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t('excluir')}
-                  </Button>
-                </div>
+                <TableActionButtons
+                  onEdit={() => onEdit(categoria)}
+                  onDelete={() => onDelete(categoria)}
+                  variant="outline"
+                />
               </TableCell>
             </TableRow>
           ))}

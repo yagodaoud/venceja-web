@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, Edit, Trash2 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableActionButtons } from '@/components/TableActionButtons';
 
 interface BoletoTableProps {
   boletos: Boleto[];
@@ -86,24 +87,11 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete }: BoletoTab
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Button
+                  <TableActionButtons
+                    onEdit={() => onEdit(boleto)}
+                    onDelete={() => onDelete(boleto)}
                     variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(boleto)}
-                    className="gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    {t('editar')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDelete(boleto)}
-                    className="gap-2 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t('excluir')}
-                  </Button>
+                  />
                   {boleto.status !== 'PAGO' && (
                     <Button
                       size="sm"
