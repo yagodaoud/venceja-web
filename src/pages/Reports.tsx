@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import Papa from 'papaparse';
+import { formatCurrencyToBrazilian, formatDateForInput } from '@/lib/utils';
 
 const Reports = () => {
   const { t } = useTranslation();
@@ -50,10 +51,10 @@ const Reports = () => {
     const csv = Papa.unparse(
       boletos.map((b) => ({
         Fornecedor: b.fornecedor,
-        Valor: b.valor,
-        Vencimento: b.vencimento,
+        Valor: formatCurrencyToBrazilian(b.valor),
+        Vencimento: formatDateForInput(b.vencimento),
         Status: b.status,
-        Categoria: b.categoria || '',
+        Categoria: b.categoria?.nome || '',
       }))
     );
 

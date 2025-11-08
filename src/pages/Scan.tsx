@@ -11,11 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDateForInput, formatCurrencyForInput, parseCurrencyFromBrazilian } from '@/lib/utils';
 
 const boletoSchema = z.object({
   fornecedor: z.string().min(1, 'Fornecedor é obrigatório').max(255),
-  valor: z.number().positive('Valor deve ser positivo'),
-  vencimento: z.string().min(1, 'Vencimento é obrigatório'),
+  valor: z.string().refine((val) => {
+    const parsed = parseCurrencyFromBrazilian(val);
+    return !isNaN(parsed) && parsed > 0;
+  }, 'Valor deve ser positivo'),
+  vencimento: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Data deve estar no formato DD/MM/AAAA'),
   codigoBarras: z.string().optional(),
   categoria: z.string().optional(),
 });
@@ -60,8 +64,8 @@ const Scan = () => {
       
       // Populate form with scanned data
       setValue('fornecedor', data.fornecedor);
-      setValue('valor', data.valor);
-      setValue('vencimento', data.vencimento);
+      setValue('valor', formatCurrencyForInput(data.valor));
+      setValue('vencimento', formatDateForInput(data.vencimento));
       if (data.codigoBarras) setValue('codigoBarras', data.codigoBarras);
     } catch (error) {
       console.error('Scan error:', error);
@@ -69,8 +73,18 @@ const Scan = () => {
   };
 
   const onSubmit = (data: BoletoForm) => {
+    // Parse currency and ensure date is in correct format
+    const valorNumber = parseCurrencyFromBrazilian(data.valor);
+    if (isNaN(valorNumber) || valorNumber <= 0) {
+      return;
+    }
+    
     // In a real app, this would save the edited data
-    console.log('Saving boleto:', data);
+    // The data.vencimento is already in DD/MM/YYYY format
+    console.log('Saving boleto:', {
+      ...data,
+      valor: valorNumber,
+    });
     navigate('/dashboard');
   };
 
@@ -185,10 +199,34 @@ const Scan = () => {
                     <Label htmlFor="valor">{t('valor')}</Label>
                     <Input
                       id="valor"
-                      type="number"
-                      step="0.01"
-                      {...register('valor', { valueAsNumber: true })}
+                      type="text"
+                      placeholder="0,00"
+                      {...register('valor')}
                       className={errors.valor ? 'border-destructive' : ''}
+                      onChange={(e) => {
+                        let input = e.target.value;
+                        // Remove all non-digit characters except comma
+                        input = input.replace(/[^\d,]/g, '');
+                        // Only allow one comma
+                        const parts = input.split(',');
+                        if (parts.length > 2) {
+                          input = parts[0] + ',' + parts.slice(1).join('');
+                        }
+                        // Limit decimal places to 2
+                        if (parts.length === 2 && parts[1].length > 2) {
+                          input = parts[0] + ',' + parts[1].substring(0, 2);
+                        }
+                        setValue('valor', input);
+                      }}
+                      onBlur={(e) => {
+                        // Format on blur with thousands separators if valid
+                        const parsed = parseCurrencyFromBrazilian(e.target.value);
+                        if (!isNaN(parsed) && parsed >= 0) {
+                          setValue('valor', formatCurrencyForInput(parsed));
+                        } else if (e.target.value.trim() === '') {
+                          setValue('valor', '');
+                        }
+                      }}
                     />
                     {errors.valor && (
                       <p className="text-sm text-destructive">{errors.valor.message}</p>
@@ -199,9 +237,24 @@ const Scan = () => {
                     <Label htmlFor="vencimento">{t('vencimento')}</Label>
                     <Input
                       id="vencimento"
-                      type="date"
+                      type="text"
+                      placeholder="DD/MM/AAAA"
+                      maxLength={10}
                       {...register('vencimento')}
                       className={errors.vencimento ? 'border-destructive' : ''}
+                      onChange={(e) => {
+                        let input = e.target.value;
+                        // Remove all non-digit characters
+                        input = input.replace(/\D/g, '');
+                        // Add slashes automatically
+                        if (input.length > 2) {
+                          input = input.substring(0, 2) + '/' + input.substring(2);
+                        }
+                        if (input.length > 5) {
+                          input = input.substring(0, 5) + '/' + input.substring(5, 9);
+                        }
+                        setValue('vencimento', input);
+                      }}
                     />
                     {errors.vencimento && (
                       <p className="text-sm text-destructive">{errors.vencimento.message}</p>

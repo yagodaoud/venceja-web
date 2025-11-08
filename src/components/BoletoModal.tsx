@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useCreateBoleto, useUpdateBoleto } from '@/hooks/useBoletos';
 import { useCategorias } from '@/hooks/useCategorias';
 import { Boleto } from '@/types';
-import { parseDate, formatDateToBrazilian } from '@/lib/utils';
+import { parseDate, formatDateToBrazilian, formatDateForInput, formatCurrencyForInput, parseCurrencyFromBrazilian } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -51,13 +51,9 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
     if (isOpen) {
       if (boleto) {
         setFornecedor(boleto.fornecedor);
-        setValor(boleto.valor.toString());
-        // Format date for input (YYYY-MM-DD)
-        const vencimentoDate = parseDate(boleto.vencimento);
-        const year = vencimentoDate.getFullYear();
-        const month = String(vencimentoDate.getMonth() + 1).padStart(2, '0');
-        const day = String(vencimentoDate.getDate()).padStart(2, '0');
-        setVencimento(`${year}-${month}-${day}`);
+        setValor(formatCurrencyForInput(boleto.valor));
+        // Format date for input (DD/MM/YYYY)
+        setVencimento(formatDateForInput(boleto.vencimento));
         setCodigoBarras(boleto.codigoBarras || '');
         setCategoriaId(boleto.categoria?.id.toString() || 'none');
       } else {
@@ -76,7 +72,9 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
       return;
     }
 
-    if (!valor || isNaN(parseFloat(valor)) || parseFloat(valor) <= 0) {
+    // Parse currency from Brazilian format
+    const valorNumber = parseCurrencyFromBrazilian(valor);
+    if (isNaN(valorNumber) || valorNumber <= 0) {
       toast.error('Por favor, insira um valor válido');
       return;
     }
@@ -86,13 +84,20 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
       return;
     }
 
+    // Validate date format (DD/MM/YYYY)
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    if (!dateRegex.test(vencimento)) {
+      toast.error('Por favor, insira uma data válida no formato DD/MM/AAAA');
+      return;
+    }
+
     try {
       let result: Boleto;
 
       const boletoData = {
         fornecedor: fornecedor.trim(),
-        valor: parseFloat(valor),
-        vencimento: formatDateToBrazilian(vencimento),
+        valor: valorNumber,
+        vencimento: vencimento, // Already in DD/MM/YYYY format
         codigoBarras: codigoBarras.trim() || undefined,
         categoriaId: categoriaId && categoriaId !== 'none' ? parseInt(categoriaId) : null,
       };
@@ -160,12 +165,33 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
             <Label htmlFor="valor">{t('valor')}</Label>
             <Input
               id="valor"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
+              type="text"
+              placeholder="0,00"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
+              onChange={(e) => {
+                let input = e.target.value;
+                // Remove all non-digit characters except comma
+                input = input.replace(/[^\d,]/g, '');
+                // Only allow one comma
+                const parts = input.split(',');
+                if (parts.length > 2) {
+                  input = parts[0] + ',' + parts.slice(1).join('');
+                }
+                // Limit decimal places to 2
+                if (parts.length === 2 && parts[1].length > 2) {
+                  input = parts[0] + ',' + parts[1].substring(0, 2);
+                }
+                setValor(input);
+              }}
+              onBlur={(e) => {
+                // Format on blur with thousands separators if valid
+                const parsed = parseCurrencyFromBrazilian(e.target.value);
+                if (!isNaN(parsed) && parsed >= 0) {
+                  setValor(formatCurrencyForInput(parsed));
+                } else if (e.target.value.trim() === '') {
+                  setValor('');
+                }
+              }}
             />
           </div>
 
@@ -173,9 +199,23 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
             <Label htmlFor="vencimento">{t('vencimento')}</Label>
             <Input
               id="vencimento"
-              type="date"
+              type="text"
+              placeholder="DD/MM/AAAA"
+              maxLength={10}
               value={vencimento}
-              onChange={(e) => setVencimento(e.target.value)}
+              onChange={(e) => {
+                let input = e.target.value;
+                // Remove all non-digit characters
+                input = input.replace(/\D/g, '');
+                // Add slashes automatically
+                if (input.length > 2) {
+                  input = input.substring(0, 2) + '/' + input.substring(2);
+                }
+                if (input.length > 5) {
+                  input = input.substring(0, 5) + '/' + input.substring(5, 9);
+                }
+                setVencimento(input);
+              }}
             />
           </div>
 
