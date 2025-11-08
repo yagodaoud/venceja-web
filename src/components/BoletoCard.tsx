@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, Calendar, DollarSign } from 'lucide-react';
+import { CheckCircle, Calendar, DollarSign, Edit, Trash2 } from 'lucide-react';
 import { Boleto } from '@/types';
+import { parseDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -10,9 +11,11 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 interface BoletoCardProps {
   boleto: Boleto;
   onMarkPaid: (boleto: Boleto) => void;
+  onEdit: (boleto: Boleto) => void;
+  onDelete: (boleto: Boleto) => void;
 }
 
-export const BoletoCard = ({ boleto, onMarkPaid }: BoletoCardProps) => {
+export const BoletoCard = ({ boleto, onMarkPaid, onEdit, onDelete }: BoletoCardProps) => {
   const { t } = useTranslation();
 
   const getStatusVariant = (status: string) => {
@@ -45,7 +48,13 @@ export const BoletoCard = ({ boleto, onMarkPaid }: BoletoCardProps) => {
           </Badge>
         </div>
         {boleto.categoria && (
-          <p className="text-sm text-muted-foreground">{boleto.categoria}</p>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: boleto.categoria.cor }}
+            />
+            <p className="text-sm text-muted-foreground">{boleto.categoria.nome}</p>
+          </div>
         )}
       </CardHeader>
 
@@ -58,21 +67,43 @@ export const BoletoCard = ({ boleto, onMarkPaid }: BoletoCardProps) => {
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          <span>{format(new Date(boleto.vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+          <span>{format(parseDate(boleto.vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
         </div>
       </CardContent>
 
-      {boleto.status !== 'PAGO' && (
-        <CardFooter>
-          <Button
-            className="w-full gap-2 h-12"
-            onClick={() => onMarkPaid(boleto)}
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('marcarPago')}
-          </Button>
-        </CardFooter>
-      )}
+      <CardFooter>
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(boleto)}
+              className="flex-1 gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              {t('editar')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(boleto)}
+              className="flex-1 gap-2 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('excluir')}
+            </Button>
+          </div>
+          {boleto.status !== 'PAGO' && (
+            <Button
+              className="w-full gap-2 h-12"
+              onClick={() => onMarkPaid(boleto)}
+            >
+              <CheckCircle className="h-4 w-4" />
+              {t('marcarPago')}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
     </Card>
   );
 };

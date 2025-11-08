@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Boleto, PaginatedResponse, ScanBoletoResponse } from '@/types';
+import { Boleto, PaginatedResponse, ScanBoletoResponse, CreateBoletoRequest, UpdateBoletoRequest } from '@/types';
 import { toast } from 'react-hot-toast';
 
 interface BoletoFilters {
@@ -68,6 +68,76 @@ export const useMarkPaid = () => {
     },
     onError: () => {
       toast.error('Erro ao marcar boleto como pago');
+    },
+  });
+};
+
+export const useCreateBoleto = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (boleto: CreateBoletoRequest) => {
+      const response = await api.post<any>('/boletos', boleto);
+      // Handle both response formats: { data: Boleto } or Boleto directly
+      const boletoData = response.data?.data || response.data;
+      
+      // Ensure we have a valid Boleto object
+      if (!boletoData || typeof boletoData !== 'object') {
+        throw new Error('Resposta inválida da API');
+      }
+      
+      return boletoData as Boleto;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['boletos'] });
+      toast.success('Boleto criado com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao criar boleto');
+    },
+  });
+};
+
+export const useUpdateBoleto = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, boleto }: { id: number; boleto: UpdateBoletoRequest }) => {
+      const response = await api.put<any>(`/boletos/${id}`, boleto);
+      // Handle both response formats: { data: Boleto } or Boleto directly
+      const boletoData = response.data?.data || response.data;
+      
+      // Ensure we have a valid Boleto object
+      if (!boletoData || typeof boletoData !== 'object') {
+        throw new Error('Resposta inválida da API');
+      }
+      
+      return boletoData as Boleto;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['boletos'] });
+      toast.success('Boleto atualizado com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar boleto');
+    },
+  });
+};
+
+export const useDeleteBoleto = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/boletos/${id}`);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['boletos'] });
+      toast.success('Boleto excluído com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir boleto');
     },
   });
 };

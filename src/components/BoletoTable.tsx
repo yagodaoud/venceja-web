@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Edit, Trash2 } from 'lucide-react';
 import { Boleto } from '@/types';
+import { parseDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,9 +18,11 @@ import {
 interface BoletoTableProps {
   boletos: Boleto[];
   onMarkPaid: (boleto: Boleto) => void;
+  onEdit: (boleto: Boleto) => void;
+  onDelete: (boleto: Boleto) => void;
 }
 
-export const BoletoTable = ({ boletos, onMarkPaid }: BoletoTableProps) => {
+export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete }: BoletoTableProps) => {
   const { t } = useTranslation();
 
   const getStatusVariant = (status: string) => {
@@ -61,25 +64,57 @@ export const BoletoTable = ({ boletos, onMarkPaid }: BoletoTableProps) => {
               <TableCell className="font-medium">{boleto.fornecedor}</TableCell>
               <TableCell>{formatCurrency(boleto.valor)}</TableCell>
               <TableCell>
-                {format(new Date(boleto.vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                {format(parseDate(boleto.vencimento), 'dd/MM/yyyy', { locale: ptBR })}
               </TableCell>
-              <TableCell>{boleto.categoria || '-'}</TableCell>
+              <TableCell>
+                {boleto.categoria ? (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: boleto.categoria.cor }}
+                    />
+                    <span>{boleto.categoria.nome}</span>
+                  </div>
+                ) : (
+                  '-'
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={getStatusVariant(boleto.status)}>
                   {t(boleto.status)}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                {boleto.status !== 'PAGO' && (
+                <div className="flex items-center justify-end gap-2">
                   <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => onMarkPaid(boleto)}
+                    onClick={() => onEdit(boleto)}
                     className="gap-2"
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    {t('marcarPago')}
+                    <Edit className="h-4 w-4" />
+                    {t('editar')}
                   </Button>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(boleto)}
+                    className="gap-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('excluir')}
+                  </Button>
+                  {boleto.status !== 'PAGO' && (
+                    <Button
+                      size="sm"
+                      onClick={() => onMarkPaid(boleto)}
+                      className="gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {t('marcarPago')}
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

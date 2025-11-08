@@ -20,11 +20,18 @@ const resources = {
       // Boletos
       boletos: 'Boletos',
       fornecedor: 'Fornecedor',
+      fornecedorPlaceholder: 'Digite o nome do fornecedor',
       valor: 'Valor',
       vencimento: 'Vencimento',
       status: 'Status',
       categoria: 'Categoria',
       codigoBarras: 'Código de Barras',
+      codigoBarrasPlaceholder: 'Digite o código de barras',
+      criarBoleto: 'Criar Boleto',
+      criarBoletoDescricao: 'Crie um novo boleto manualmente',
+      editarBoleto: 'Editar Boleto',
+      editarBoletoDescricao: 'Edite os dados do boleto',
+      selecionarCategoria: 'Selecionar categoria',
       
       // Status
       PENDENTE: 'Pendente',

@@ -1,5 +1,11 @@
 export type BoletoStatus = 'PENDENTE' | 'VENCIDO' | 'PAGO';
 
+export interface BoletoCategoria {
+  id: number;
+  nome: string;
+  cor: string;
+}
+
 export interface Boleto {
   id: number;
   userId: number;
@@ -9,7 +15,7 @@ export interface Boleto {
   codigoBarras?: string;
   imagemUrl?: string;
   status: BoletoStatus;
-  categoria?: string;
+  categoria?: BoletoCategoria | null;
   comprovanteUrl?: string;
   semComprovante: boolean;
   createdAt: string;
@@ -71,4 +77,20 @@ export interface CreateCategoriaRequest {
 export interface UpdateCategoriaRequest {
   nome: string;
   cor: string;
+}
+
+export interface CreateBoletoRequest {
+  fornecedor: string;
+  valor: number;
+  vencimento: string;
+  codigoBarras?: string;
+  categoriaId?: number | null;
+}
+
+export interface UpdateBoletoRequest {
+  fornecedor: string;
+  valor: number;
+  vencimento: string;
+  codigoBarras?: string;
+  categoriaId?: number | null;
 }

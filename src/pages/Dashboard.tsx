@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBoletos } from '@/hooks/useBoletos';
 import { Boleto } from '@/types';
+import { parseDate } from '@/lib/utils';
 import { Layout } from '@/components/Layout';
 import { BoletoTable } from '@/components/BoletoTable';
 import { BoletoCard } from '@/components/BoletoCard';
 import { PaymentModal } from '@/components/PaymentModal';
+import { BoletoModal } from '@/components/BoletoModal';
+import { DeleteBoletoModal } from '@/components/DeleteBoletoModal';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -23,7 +27,11 @@ const Dashboard = () => {
   const [status, setStatus] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [selectedBoleto, setSelectedBoleto] = useState<Boleto | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useBoletos({
     status: status === 'all' ? undefined : status,
@@ -33,12 +41,76 @@ const Dashboard = () => {
 
   const handleMarkPaid = (boleto: Boleto) => {
     setSelectedBoleto(boleto);
-    setIsModalOpen(true);
+    setIsPaymentModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
     setSelectedBoleto(null);
+  };
+
+  const handleOpenBoletoModal = (boleto?: Boleto) => {
+    setEditingBoleto(boleto || null);
+    setIsBoletoModalOpen(true);
+  };
+
+  const handleCloseBoletoModal = () => {
+    setIsBoletoModalOpen(false);
+    setEditingBoleto(null);
+  };
+
+  const handleEdit = (boleto: Boleto) => {
+    handleOpenBoletoModal(boleto);
+  };
+
+  const handleDelete = (boleto: Boleto) => {
+    setEditingBoleto(boleto);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setEditingBoleto(null);
+  };
+
+  const handleBoletoSuccess = (boleto: Boleto) => {
+    // Manually update the cache for instant update
+    queryClient.setQueryData(['boletos', { status: status === 'all' ? undefined : status, page, size: 10 }], (oldData: any) => {
+      if (!oldData || !oldData.data) return oldData;
+
+      const existingIndex = oldData.data.findIndex((b: Boleto) => b.id === boleto.id);
+
+      if (existingIndex >= 0) {
+        // Update existing boleto
+        const newData = [...oldData.data];
+        newData[existingIndex] = {
+          ...boleto,
+          createdAt: boleto.createdAt || newData[existingIndex].createdAt,
+          updatedAt: boleto.updatedAt || new Date().toISOString(),
+        };
+        return {
+          ...oldData,
+          data: newData,
+        };
+      } else {
+        // Add new boleto
+        return {
+          ...oldData,
+          data: [
+            {
+              ...boleto,
+              createdAt: boleto.createdAt || new Date().toISOString(),
+              updatedAt: boleto.updatedAt || new Date().toISOString(),
+            },
+            ...oldData.data,
+          ],
+          meta: {
+            ...oldData.meta,
+            total: oldData.meta.total + 1,
+          },
+        };
+      }
+    });
   };
 
   // Check for boletos expiring in 3 days
@@ -47,7 +119,7 @@ const Dashboard = () => {
   threeDaysFromNow.setDate(today.getDate() + 3);
 
   const expiringBoletos = data?.data.filter((boleto) => {
-    const vencimento = new Date(boleto.vencimento);
+    const vencimento = parseDate(boleto.vencimento);
     return (
       boleto.status === 'PENDENTE' &&
       vencimento >= today &&
@@ -59,11 +131,17 @@ const Dashboard = () => {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('dashboard')}</h1>
-          <p className="text-muted-foreground">
-            Gerencie seus boletos de forma eficiente
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{t('dashboard')}</h1>
+            <p className="text-muted-foreground">
+              Gerencie seus boletos de forma eficiente
+            </p>
+          </div>
+          <Button onClick={() => handleOpenBoletoModal()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            {t('criarBoleto')}
+          </Button>
         </div>
 
         {/* Alert for expiring boletos */}
@@ -117,7 +195,12 @@ const Dashboard = () => {
         ) : (
           <>
             {/* Desktop Table */}
-            <BoletoTable boletos={data.data} onMarkPaid={handleMarkPaid} />
+            <BoletoTable 
+              boletos={data.data} 
+              onMarkPaid={handleMarkPaid}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
 
             {/* Mobile Cards */}
             <div className="grid gap-4 md:hidden">
@@ -126,6 +209,8 @@ const Dashboard = () => {
                   key={boleto.id}
                   boleto={boleto}
                   onMarkPaid={handleMarkPaid}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>
@@ -159,8 +244,23 @@ const Dashboard = () => {
       {/* Payment Modal */}
       <PaymentModal
         boleto={selectedBoleto}
-        isOpen={isModalOpen}
-        onClose={closeModal}
+        isOpen={isPaymentModalOpen}
+        onClose={closePaymentModal}
+      />
+
+      {/* Boleto Modal */}
+      <BoletoModal
+        boleto={editingBoleto}
+        isOpen={isBoletoModalOpen}
+        onClose={handleCloseBoletoModal}
+        onSuccess={handleBoletoSuccess}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteBoletoModal
+        boleto={editingBoleto}
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
       />
     </Layout>
   );
