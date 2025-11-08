@@ -7,6 +7,8 @@ interface BoletoFilters {
   status?: string;
   page?: number;
   size?: number;
+  dataInicio?: string; // DD/MM/YYYY format
+  dataFim?: string; // DD/MM/YYYY format
 }
 
 export const useBoletos = (filters: BoletoFilters = {}) => {
@@ -15,6 +17,8 @@ export const useBoletos = (filters: BoletoFilters = {}) => {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.status) params.append('status', filters.status);
+      if (filters.dataInicio) params.append('dataInicio', filters.dataInicio);
+      if (filters.dataFim) params.append('dataFim', filters.dataFim);
       params.append('page', String(filters.page || 0));
       params.append('size', String(filters.size || 10));
 

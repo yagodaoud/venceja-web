@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DateRange } from 'react-day-picker';
+import { format, startOfMonth, endOfMonth, startOfDay, subMonths, addMonths } from 'date-fns';
 import { useBoletos } from '@/hooks/useBoletos';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
@@ -12,6 +14,7 @@ import { PaymentModal } from '@/components/PaymentModal';
 import { BoletoModal } from '@/components/BoletoModal';
 import { DeleteBoletoModal } from '@/components/DeleteBoletoModal';
 import { ReceiptModal } from '@/components/ReceiptModal';
+import { DateRangePicker } from '@/components/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -23,10 +26,61 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Helper function to get current month range
+const getCurrentMonthRange = (): DateRange => {
+  const today = new Date();
+  return {
+    from: startOfDay(startOfMonth(today)),
+    to: startOfDay(endOfMonth(today)),
+  };
+};
+
+// Helper function to get last month range
+const getLastMonthRange = (): DateRange => {
+  const today = new Date();
+  const lastMonth = subMonths(today, 1);
+  return {
+    from: startOfDay(startOfMonth(lastMonth)),
+    to: startOfDay(endOfMonth(lastMonth)),
+  };
+};
+
+// Helper function to get last 3 months range
+const getLast3MonthsRange = (): DateRange => {
+  const today = new Date();
+  const threeMonthsAgo = subMonths(today, 2);
+  return {
+    from: startOfDay(startOfMonth(threeMonthsAgo)),
+    to: startOfDay(endOfMonth(today)),
+  };
+};
+
+// Helper function to get current bimestre (current month + next month)
+const getCurrentBimestreRange = (): DateRange => {
+  const today = new Date();
+  const nextMonth = addMonths(today, 1);
+  return {
+    from: startOfDay(startOfMonth(today)),
+    to: startOfDay(endOfMonth(nextMonth)),
+  };
+};
+
+// Helper function to check if two date ranges are equal
+const areDateRangesEqual = (range1: DateRange | undefined, range2: DateRange | undefined): boolean => {
+  if (!range1 && !range2) return true;
+  if (!range1 || !range2) return false;
+  if (!range1.from || !range1.to || !range2.from || !range2.to) return false;
+  return (
+    range1.from.getTime() === range2.from.getTime() &&
+    range1.to.getTime() === range2.to.getTime()
+  );
+};
+
 const Dashboard = () => {
   const { t } = useTranslation();
   const [status, setStatus] = useState<string>('all');
   const [page, setPage] = useState(0);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedBoleto, setSelectedBoleto] = useState<Boleto | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
@@ -36,10 +90,22 @@ const Dashboard = () => {
   const [receiptBoleto, setReceiptBoleto] = useState<Boleto | null>(null);
   const queryClient = useQueryClient();
 
+  // Convert DateRange to DD/MM/YYYY format strings
+  const formatDateForAPI = (date: Date): string => {
+    return format(date, 'dd/MM/yyyy');
+  };
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [status, dateRange]);
+
   const { data, isLoading, error } = useBoletos({
     status: status === 'all' ? undefined : status,
     page,
     size: 10,
+    dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
+    dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
   });
 
   const handleMarkPaid = (boleto: Boleto) => {
@@ -88,7 +154,14 @@ const Dashboard = () => {
 
   const handleBoletoSuccess = (boleto: Boleto) => {
     // Manually update the cache for instant update
-    queryClient.setQueryData(['boletos', { status: status === 'all' ? undefined : status, page, size: 10 }], (oldData: any) => {
+    const filters = {
+      status: status === 'all' ? undefined : status,
+      page,
+      size: 10,
+      dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
+      dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
+    };
+    queryClient.setQueryData(['boletos', filters], (oldData: any) => {
       if (!oldData || !oldData.data) return oldData;
 
       const existingIndex = oldData.data.findIndex((b: Boleto) => b.id === boleto.id);
@@ -169,20 +242,64 @@ const Dashboard = () => {
         )}
 
         {/* Filters */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('filtrar')}:</span>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="PENDENTE">{t('PENDENTE')}</SelectItem>
-                <SelectItem value="VENCIDO">{t('VENCIDO')}</SelectItem>
-                <SelectItem value="PAGO">{t('PAGO')}</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{t('filtrar')}:</span>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="PENDENTE">{t('PENDENTE')}</SelectItem>
+                  <SelectItem value="VENCIDO">{t('VENCIDO')}</SelectItem>
+                  <SelectItem value="PAGO">{t('PAGO')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DateRangePicker
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
+          </div>
+          {/* Quick Date Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={areDateRangesEqual(dateRange, getCurrentMonthRange()) ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateRange(getCurrentMonthRange())}
+            >
+              Este Mês
+            </Button>
+            <Button
+              variant={areDateRangesEqual(dateRange, getLastMonthRange()) ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateRange(getLastMonthRange())}
+            >
+              Último Mês
+            </Button>
+            <Button
+              variant={areDateRangesEqual(dateRange, getLast3MonthsRange()) ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateRange(getLast3MonthsRange())}
+            >
+              Últimos 3 Meses
+            </Button>
+            <Button
+              variant={areDateRangesEqual(dateRange, getCurrentBimestreRange()) ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateRange(getCurrentBimestreRange())}
+            >
+              Bimestre Atual
+            </Button>
+            <Button
+              variant={!dateRange ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDateRange(undefined)}
+            >
+              Todos os Períodos
+            </Button>
           </div>
         </div>
 
@@ -208,8 +325,8 @@ const Dashboard = () => {
         ) : (
           <>
             {/* Desktop Table */}
-            <BoletoTable 
-              boletos={data.data} 
+            <BoletoTable
+              boletos={data.data}
               onMarkPaid={handleMarkPaid}
               onEdit={handleEdit}
               onDelete={handleDelete}

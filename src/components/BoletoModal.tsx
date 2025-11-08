@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
 import { useCreateBoleto, useUpdateBoleto } from '@/hooks/useBoletos';
 import { useCategorias } from '@/hooks/useCategorias';
 import { Boleto } from '@/types';
-import { parseDate, formatDateToBrazilian, formatDateForInput, formatCurrencyForInput, parseCurrencyFromBrazilian } from '@/lib/utils';
+import { parseDate, formatCurrencyForInput, parseCurrencyFromBrazilian } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from './ui/input';
+import { SingleDatePicker } from '@/components/DateRangePicker';
 import {
   Select,
   SelectContent,
@@ -35,7 +37,7 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
   const { t } = useTranslation();
   const [fornecedor, setFornecedor] = useState('');
   const [valor, setValor] = useState('');
-  const [vencimento, setVencimento] = useState('');
+  const [vencimento, setVencimento] = useState<Date | undefined>(undefined);
   const [codigoBarras, setCodigoBarras] = useState('');
   const [categoriaId, setCategoriaId] = useState<string>('none');
   const createBoletoMutation = useCreateBoleto();
@@ -52,14 +54,15 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
       if (boleto) {
         setFornecedor(boleto.fornecedor);
         setValor(formatCurrencyForInput(boleto.valor));
-        // Format date for input (DD/MM/YYYY)
-        setVencimento(formatDateForInput(boleto.vencimento));
+        // Parse date string to Date object
+        const parsedDate = parseDate(boleto.vencimento);
+        setVencimento(isNaN(parsedDate.getTime()) ? undefined : parsedDate);
         setCodigoBarras(boleto.codigoBarras || '');
         setCategoriaId(boleto.categoria?.id.toString() || 'none');
       } else {
         setFornecedor('');
         setValor('');
-        setVencimento('');
+        setVencimento(undefined);
         setCodigoBarras('');
         setCategoriaId('none');
       }
@@ -84,20 +87,16 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
       return;
     }
 
-    // Validate date format (DD/MM/YYYY)
-    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-    if (!dateRegex.test(vencimento)) {
-      toast.error('Por favor, insira uma data válida no formato DD/MM/AAAA');
-      return;
-    }
-
     try {
       let result: Boleto;
+
+      // Format date to DD/MM/YYYY
+      const vencimentoFormatted = format(vencimento, 'dd/MM/yyyy');
 
       const boletoData = {
         fornecedor: fornecedor.trim(),
         valor: valorNumber,
-        vencimento: vencimento, // Already in DD/MM/YYYY format
+        vencimento: vencimentoFormatted,
         codigoBarras: codigoBarras.trim() || undefined,
         categoriaId: categoriaId && categoriaId !== 'none' ? parseInt(categoriaId) : null,
       };
@@ -114,7 +113,7 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
       // Reset form
       setFornecedor('');
       setValor('');
-      setVencimento('');
+      setVencimento(undefined);
       setCodigoBarras('');
       setCategoriaId('none');
 
@@ -132,7 +131,7 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
   const handleClose = () => {
     setFornecedor('');
     setValor('');
-    setVencimento('');
+    setVencimento(undefined);
     setCodigoBarras('');
     setCategoriaId('none');
     onClose();
@@ -197,25 +196,10 @@ export const BoletoModal = ({ boleto, isOpen, onClose, onSuccess }: BoletoModalP
 
           <div className="space-y-2">
             <Label htmlFor="vencimento">{t('vencimento')}</Label>
-            <Input
-              id="vencimento"
-              type="text"
+            <SingleDatePicker
+              date={vencimento}
+              onDateChange={setVencimento}
               placeholder="DD/MM/AAAA"
-              maxLength={10}
-              value={vencimento}
-              onChange={(e) => {
-                let input = e.target.value;
-                // Remove all non-digit characters
-                input = input.replace(/\D/g, '');
-                // Add slashes automatically
-                if (input.length > 2) {
-                  input = input.substring(0, 2) + '/' + input.substring(2);
-                }
-                if (input.length > 5) {
-                  input = input.substring(0, 5) + '/' + input.substring(5, 9);
-                }
-                setVencimento(input);
-              }}
             />
           </div>
 

@@ -1,16 +1,40 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
+import { format, startOfMonth, endOfMonth, startOfDay } from 'date-fns';
 import { useBoletos } from '@/hooks/useBoletos';
 import { Layout } from '@/components/Layout';
+import { DateRangePicker } from '@/components/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import Papa from 'papaparse';
 import { formatCurrencyToBrazilian, formatDateForInput } from '@/lib/utils';
 
+// Helper function to get current month range
+const getCurrentMonthRange = (): DateRange => {
+  const today = new Date();
+  return {
+    from: startOfDay(startOfMonth(today)),
+    to: startOfDay(endOfMonth(today)),
+  };
+};
+
 const Reports = () => {
   const { t } = useTranslation();
-  const { data } = useBoletos({ size: 100 });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
+
+  // Convert DateRange to DD/MM/YYYY format strings
+  const formatDateForAPI = (date: Date): string => {
+    return format(date, 'dd/MM/yyyy');
+  };
+
+  const { data } = useBoletos({
+    size: 100,
+    dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
+    dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
+  });
 
   const boletos = data?.data || [];
 
@@ -69,7 +93,7 @@ const Reports = () => {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">{t('reports')}</h1>
             <p className="text-muted-foreground">
@@ -80,6 +104,15 @@ const Reports = () => {
             <Download className="h-4 w-4" />
             {t('exportarCSV')}
           </Button>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">{t('filtrar')}:</span>
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
         </div>
 
         {/* Summary Cards */}
