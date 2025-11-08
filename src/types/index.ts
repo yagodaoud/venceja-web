@@ -28,8 +28,10 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
-  user: User;
+  data: {
+    token: string;
+    user: User;
+  };
 }
 
 export interface PaginatedResponse<T> {

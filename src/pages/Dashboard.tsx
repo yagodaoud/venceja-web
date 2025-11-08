@@ -20,13 +20,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<string>('');
+  const [status, setStatus] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [selectedBoleto, setSelectedBoleto] = useState<Boleto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data, isLoading, error } = useBoletos({
-    status: status || undefined,
+    status: status === 'all' ? undefined : status,
     page,
     size: 10,
   });
@@ -86,7 +86,7 @@ const Dashboard = () => {
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="PENDENTE">{t('PENDENTE')}</SelectItem>
                 <SelectItem value="VENCIDO">{t('VENCIDO')}</SelectItem>
                 <SelectItem value="PAGO">{t('PAGO')}</SelectItem>

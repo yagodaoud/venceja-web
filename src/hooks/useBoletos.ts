@@ -17,7 +17,7 @@ export const useBoletos = (filters: BoletoFilters = {}) => {
       if (filters.status) params.append('status', filters.status);
       params.append('page', String(filters.page || 0));
       params.append('size', String(filters.size || 10));
-      
+
       const { data } = await api.get<PaginatedResponse<Boleto>>(`/boletos?${params}`);
       return data;
     },
@@ -26,12 +26,12 @@ export const useBoletos = (filters: BoletoFilters = {}) => {
 
 export const useScanBoleto = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const { data } = await api.post<ScanBoletoResponse>('/boletos/scan', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -49,14 +49,14 @@ export const useScanBoleto = () => {
 
 export const useMarkPaid = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, file }: { id: number; file?: File }) => {
       const formData = new FormData();
       if (file) {
         formData.append('comprovante', file);
       }
-      
+
       const { data } = await api.put<Boleto>(`/boletos/${id}/pagar`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
