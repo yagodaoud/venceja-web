@@ -41,6 +41,8 @@ const resources = {
       // Actions
       marcarPago: 'Marcar como Pago',
       anexarComprovante: 'Anexar Comprovante',
+      visualizarComprovante: 'Visualizar Comprovante',
+      abrirNovaAba: 'Abrir em Nova Aba',
       salvar: 'Salvar',
       cancelar: 'Cancelar',
       filtrar: 'Filtrar',

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, FileText } from 'lucide-react';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,10 @@ interface BoletoTableProps {
   onMarkPaid: (boleto: Boleto) => void;
   onEdit: (boleto: Boleto) => void;
   onDelete: (boleto: Boleto) => void;
+  onViewReceipt: (boleto: Boleto) => void;
 }
 
-export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete }: BoletoTableProps) => {
+export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete, onViewReceipt }: BoletoTableProps) => {
   const { t } = useTranslation();
 
   const getStatusVariant = (status: string) => {
@@ -92,6 +93,17 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete }: BoletoTab
                     onDelete={() => onDelete(boleto)}
                     variant="outline"
                   />
+                  {boleto.status === 'PAGO' && !boleto.semComprovante && boleto.comprovanteUrl && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onViewReceipt(boleto)}
+                      className="gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      {t('visualizarComprovante')}
+                    </Button>
+                  )}
                   {boleto.status !== 'PAGO' && (
                     <Button
                       size="sm"

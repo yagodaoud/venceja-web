@@ -11,6 +11,7 @@ import { BoletoCard } from '@/components/BoletoCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { BoletoModal } from '@/components/BoletoModal';
 import { DeleteBoletoModal } from '@/components/DeleteBoletoModal';
+import { ReceiptModal } from '@/components/ReceiptModal';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -30,7 +31,9 @@ const Dashboard = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+  const [receiptBoleto, setReceiptBoleto] = useState<Boleto | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useBoletos({
@@ -71,6 +74,16 @@ const Dashboard = () => {
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setEditingBoleto(null);
+  };
+
+  const handleViewReceipt = (boleto: Boleto) => {
+    setReceiptBoleto(boleto);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleCloseReceiptModal = () => {
+    setIsReceiptModalOpen(false);
+    setReceiptBoleto(null);
   };
 
   const handleBoletoSuccess = (boleto: Boleto) => {
@@ -200,6 +213,7 @@ const Dashboard = () => {
               onMarkPaid={handleMarkPaid}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onViewReceipt={handleViewReceipt}
             />
 
             {/* Mobile Cards */}
@@ -211,6 +225,7 @@ const Dashboard = () => {
                   onMarkPaid={handleMarkPaid}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onViewReceipt={handleViewReceipt}
                 />
               ))}
             </div>
@@ -262,6 +277,16 @@ const Dashboard = () => {
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
       />
+
+      {/* Receipt Modal */}
+      {receiptBoleto && receiptBoleto.comprovanteUrl && (
+        <ReceiptModal
+          isOpen={isReceiptModalOpen}
+          onClose={handleCloseReceiptModal}
+          comprovanteUrl={receiptBoleto.comprovanteUrl}
+          fornecedor={receiptBoleto.fornecedor}
+        />
+      )}
     </Layout>
   );
 };
