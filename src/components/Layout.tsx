@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, 
   ScanLine, 
+  Tags,
   BarChart3, 
   Settings, 
   LogOut,
@@ -45,6 +46,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/scan', icon: ScanLine, label: t('scan') },
+    { path: '/categorias', icon: Tags, label: t('categorias') },
     { path: '/reports', icon: BarChart3, label: t('reports') },
     { path: '/settings', icon: Settings, label: t('settings') },
   ];

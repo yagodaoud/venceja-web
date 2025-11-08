@@ -53,3 +53,22 @@ export interface ScanBoletoResponse {
   imagemUrl: string;
   codigoBarras?: string;
 }
+
+export interface Categoria {
+  id: number;
+  userId: number;
+  nome: string;
+  cor: string; // hex color
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoriaRequest {
+  nome: string;
+  cor: string;
+}
+
+export interface UpdateCategoriaRequest {
+  nome: string;
+  cor: string;
+}

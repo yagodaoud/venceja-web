@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Scan from "./pages/Scan";
+import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Scan />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/categorias"
+              element={
+                <ProtectedRoute>
+                  <Categories />
                 </ProtectedRoute>
               }
             />
