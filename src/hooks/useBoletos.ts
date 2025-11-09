@@ -29,6 +29,7 @@ export const useBoletos = (filters: BoletoFilters = {}) => {
       const { data } = await api.get<PaginatedResponse<Boleto>>(`/boletos?${params}`);
       return data;
     },
+    placeholderData: (previousData) => previousData,
   });
 };
 
