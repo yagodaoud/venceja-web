@@ -10,7 +10,7 @@ interface BoletoFilters {
   dataInicio?: string; // DD/MM/YYYY format
   dataFim?: string; // DD/MM/YYYY format
   sortBy?: string;
-  direction?: 'asc' | 'desc';
+  direction?: 'asc' | 'desc' | 'none';
 }
 
 export const useBoletos = (filters: BoletoFilters = {}) => {

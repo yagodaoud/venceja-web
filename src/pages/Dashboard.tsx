@@ -82,7 +82,7 @@ const Dashboard = () => {
   const [status, setStatus] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [sortBy, setSortBy] = useState<SortField>('id');
-  const [direction, setDirection] = useState<SortDirection>('desc');
+  const [direction, setDirection] = useState<SortDirection>('none');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedBoleto, setSelectedBoleto] = useState<Boleto | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -109,8 +109,8 @@ const Dashboard = () => {
     size: 10,
     dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
     dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
-    sortBy,
-    direction,
+    sortBy: direction === 'none' ? 'id' : sortBy,
+    direction: direction === 'none' ? 'desc' : direction,
   });
 
   const handleMarkPaid = (boleto: Boleto) => {
@@ -159,12 +159,22 @@ const Dashboard = () => {
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
-      // Toggle direction if clicking the same field
-      setDirection(direction === 'asc' ? 'desc' : 'asc');
+      // Cycle through: asc -> desc -> none (reset to default)
+      if (direction === 'asc') {
+        setDirection('desc');
+      } else if (direction === 'desc') {
+        // Third click: reset to default (id, desc) - show as 'none' in UI
+        setSortBy('id');
+        setDirection('none');
+      } else if (direction === 'none') {
+        // If already at default and clicking id, start ascending
+        setSortBy('id');
+        setDirection('asc');
+      }
     } else {
-      // Set new field with default descending direction
+      // Set new field with ascending direction (first click)
       setSortBy(field);
-      setDirection('desc');
+      setDirection('asc');
     }
   };
 
@@ -349,7 +359,7 @@ const Dashboard = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewReceipt={handleViewReceipt}
-              sortBy={sortBy}
+              sortBy={direction === 'none' ? undefined : sortBy}
               direction={direction}
               onSort={handleSort}
             />
@@ -372,7 +382,7 @@ const Dashboard = () => {
             <PaginationControls
               currentPage={page}
               total={data.meta.total}
-              size={data.meta.size}f
+              size={data.meta.size}
               onPageChange={setPage}
             />
           </>

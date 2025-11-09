@@ -18,7 +18,7 @@ import {
 import { TableActionButtons } from '@/components/TableActionButtons';
 
 export type SortField = 'id' | 'fornecedor' | 'valor' | 'vencimento';
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = 'asc' | 'desc' | 'none';
 
 interface BoletoTableProps {
   boletos: Boleto[];
@@ -37,8 +37,8 @@ export const BoletoTable = ({
   onEdit,
   onDelete,
   onViewReceipt,
-  sortBy = 'id',
-  direction = 'desc',
+  sortBy,
+  direction = 'none',
   onSort,
 }: BoletoTableProps) => {
   const { t } = useTranslation();
@@ -50,8 +50,8 @@ export const BoletoTable = ({
   };
 
   const getSortIcon = (field: SortField) => {
-    if (sortBy !== field) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    if (sortBy !== field || direction === 'none') {
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     }
     return direction === 'asc' ? (
       <ArrowUp className="ml-2 h-4 w-4" />
