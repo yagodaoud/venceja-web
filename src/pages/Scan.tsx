@@ -5,12 +5,21 @@ import { Upload, FileText } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useScanBoleto } from '@/hooks/useBoletos';
+import { useScanBoleto, useUpdateBoleto } from '@/hooks/useBoletos';
+import { useCategorias } from '@/hooks/useCategorias';
+import { Boleto } from '@/types';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatDateForInput, formatCurrencyForInput, parseCurrencyFromBrazilian } from '@/lib/utils';
 
 const boletoSchema = z.object({
@@ -21,7 +30,7 @@ const boletoSchema = z.object({
   }, 'Valor deve ser positivo'),
   vencimento: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Data deve estar no formato DD/MM/AAAA'),
   codigoBarras: z.string().optional(),
-  categoria: z.string().optional(),
+  categoriaId: z.string().optional(),
 });
 
 type BoletoForm = z.infer<typeof boletoSchema>;
@@ -31,17 +40,28 @@ const Scan = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [scannedData, setScannedData] = useState<any>(null);
+  const [scannedData, setScannedData] = useState<Boleto | null>(null);
   const scanMutation = useScanBoleto();
+  const updateBoletoMutation = useUpdateBoleto();
+
+  // Fetch all categories (using a large page size to get all)
+  const { data: categoriasData } = useCategorias({ page: 0, size: 1000 });
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
+    reset,
     formState: { errors },
   } = useForm<BoletoForm>({
     resolver: zodResolver(boletoSchema),
+    defaultValues: {
+      categoriaId: 'none',
+    },
   });
+
+  const categoriaId = watch('categoriaId');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -61,31 +81,61 @@ const Scan = () => {
     try {
       const data = await scanMutation.mutateAsync(file);
       setScannedData(data);
-      
+
       // Populate form with scanned data
-      setValue('fornecedor', data.fornecedor);
-      setValue('valor', formatCurrencyForInput(data.valor));
-      setValue('vencimento', formatDateForInput(data.vencimento));
+      if (data.fornecedor) setValue('fornecedor', data.fornecedor);
+      if (data.valor) setValue('valor', formatCurrencyForInput(data.valor));
+      if (data.vencimento) setValue('vencimento', formatDateForInput(data.vencimento));
       if (data.codigoBarras) setValue('codigoBarras', data.codigoBarras);
+      // Handle categoria - it might be an object or null
+      if (data.categoria) {
+        if (typeof data.categoria === 'object' && 'id' in data.categoria) {
+          setValue('categoriaId', data.categoria.id.toString());
+        } else {
+          setValue('categoriaId', 'none');
+        }
+      } else {
+        setValue('categoriaId', 'none');
+      }
     } catch (error) {
       console.error('Scan error:', error);
     }
   };
 
-  const onSubmit = (data: BoletoForm) => {
+  const onSubmit = async (formData: BoletoForm) => {
+    if (!scannedData?.id) {
+      console.error('No boleto ID found in scanned data');
+      return;
+    }
+
     // Parse currency and ensure date is in correct format
-    const valorNumber = parseCurrencyFromBrazilian(data.valor);
+    const valorNumber = parseCurrencyFromBrazilian(formData.valor);
     if (isNaN(valorNumber) || valorNumber <= 0) {
       return;
     }
-    
-    // In a real app, this would save the edited data
-    // The data.vencimento is already in DD/MM/YYYY format
-    console.log('Saving boleto:', {
-      ...data,
-      valor: valorNumber,
-    });
-    navigate('/dashboard');
+
+    try {
+      // The formData.vencimento is already in DD/MM/YYYY format
+      const boletoData = {
+        fornecedor: formData.fornecedor.trim(),
+        valor: valorNumber,
+        vencimento: formData.vencimento,
+        codigoBarras: formData.codigoBarras?.trim() || undefined,
+        categoriaId: formData.categoriaId && formData.categoriaId !== 'none'
+          ? parseInt(formData.categoriaId)
+          : null,
+      };
+
+      await updateBoletoMutation.mutateAsync({
+        id: scannedData.id,
+        boleto: boletoData,
+      });
+
+      navigate('/dashboard');
+    } catch (error) {
+      // Error is already handled by the mutation
+      console.error('Error updating boleto:', error);
+    }
   };
 
   return (
@@ -269,7 +319,25 @@ const Scan = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="categoria">{t('categoria')} (opcional)</Label>
-                  <Input id="categoria" {...register('categoria')} />
+                  <Select value={categoriaId || 'none'} onValueChange={(value) => setValue('categoriaId', value)}>
+                    <SelectTrigger id="categoria">
+                      <SelectValue placeholder={t('selecionarCategoria') || 'Selecionar categoria'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('nenhumaCategoria') || 'Nenhuma categoria'}</SelectItem>
+                      {categoriasData?.data.map((categoria) => (
+                        <SelectItem key={categoria.id} value={categoria.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: categoria.cor }}
+                            />
+                            {categoria.nome}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex gap-2">
@@ -281,12 +349,23 @@ const Scan = () => {
                       setScannedData(null);
                       setFile(null);
                       setPreview(null);
+                      reset({
+                        fornecedor: '',
+                        valor: '',
+                        vencimento: '',
+                        codigoBarras: '',
+                        categoriaId: 'none',
+                      });
                     }}
                   >
                     Voltar
                   </Button>
-                  <Button type="submit" className="flex-1">
-                    {t('salvar')}
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={updateBoletoMutation.isPending}
+                  >
+                    {updateBoletoMutation.isPending ? (t('salvando') || 'Salvando...') : t('salvar')}
                   </Button>
                 </div>
               </form>

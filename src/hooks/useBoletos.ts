@@ -36,10 +36,18 @@ export const useScanBoleto = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const { data } = await api.post<ScanBoletoResponse>('/boletos/scan', formData, {
+      const response = await api.post<any>('/boletos/scan', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      return data;
+      // Handle both response formats: { data: Boleto } or Boleto directly
+      const boletoData = response.data?.data || response.data;
+
+      // Ensure we have a valid Boleto object
+      if (!boletoData || typeof boletoData !== 'object') {
+        throw new Error('Resposta inválida da API');
+      }
+
+      return boletoData as Boleto;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boletos'] });
@@ -84,12 +92,12 @@ export const useCreateBoleto = () => {
       const response = await api.post<any>('/boletos', boleto);
       // Handle both response formats: { data: Boleto } or Boleto directly
       const boletoData = response.data?.data || response.data;
-      
+
       // Ensure we have a valid Boleto object
       if (!boletoData || typeof boletoData !== 'object') {
         throw new Error('Resposta inválida da API');
       }
-      
+
       return boletoData as Boleto;
     },
     onSuccess: () => {
@@ -110,12 +118,12 @@ export const useUpdateBoleto = () => {
       const response = await api.put<any>(`/boletos/${id}`, boleto);
       // Handle both response formats: { data: Boleto } or Boleto directly
       const boletoData = response.data?.data || response.data;
-      
+
       // Ensure we have a valid Boleto object
       if (!boletoData || typeof boletoData !== 'object') {
         throw new Error('Resposta inválida da API');
       }
-      
+
       return boletoData as Boleto;
     },
     onSuccess: () => {
