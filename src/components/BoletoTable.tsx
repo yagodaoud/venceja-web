@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, FileText, Copy } from 'lucide-react';
+import { CheckCircle, FileText, Copy, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
@@ -17,16 +17,48 @@ import {
 } from '@/components/ui/table';
 import { TableActionButtons } from '@/components/TableActionButtons';
 
+export type SortField = 'id' | 'fornecedor' | 'valor' | 'vencimento';
+export type SortDirection = 'asc' | 'desc';
+
 interface BoletoTableProps {
   boletos: Boleto[];
   onMarkPaid: (boleto: Boleto) => void;
   onEdit: (boleto: Boleto) => void;
   onDelete: (boleto: Boleto) => void;
   onViewReceipt: (boleto: Boleto) => void;
+  sortBy?: SortField;
+  direction?: SortDirection;
+  onSort?: (field: SortField) => void;
 }
 
-export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete, onViewReceipt }: BoletoTableProps) => {
+export const BoletoTable = ({
+  boletos,
+  onMarkPaid,
+  onEdit,
+  onDelete,
+  onViewReceipt,
+  sortBy = 'id',
+  direction = 'desc',
+  onSort,
+}: BoletoTableProps) => {
   const { t } = useTranslation();
+
+  const handleSort = (field: SortField) => {
+    if (onSort) {
+      onSort(field);
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return direction === 'asc' ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -62,9 +94,45 @@ export const BoletoTable = ({ boletos, onMarkPaid, onEdit, onDelete, onViewRecei
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t('fornecedor')}</TableHead>
-            <TableHead>{t('valor')}</TableHead>
-            <TableHead>{t('vencimento')}</TableHead>
+            <TableHead>
+              {onSort ? (
+                <button
+                  onClick={() => handleSort('fornecedor')}
+                  className="flex items-center hover:text-foreground transition-colors"
+                >
+                  {t('fornecedor')}
+                  {getSortIcon('fornecedor')}
+                </button>
+              ) : (
+                t('fornecedor')
+              )}
+            </TableHead>
+            <TableHead>
+              {onSort ? (
+                <button
+                  onClick={() => handleSort('valor')}
+                  className="flex items-center hover:text-foreground transition-colors"
+                >
+                  {t('valor')}
+                  {getSortIcon('valor')}
+                </button>
+              ) : (
+                t('valor')
+              )}
+            </TableHead>
+            <TableHead>
+              {onSort ? (
+                <button
+                  onClick={() => handleSort('vencimento')}
+                  className="flex items-center hover:text-foreground transition-colors"
+                >
+                  {t('vencimento')}
+                  {getSortIcon('vencimento')}
+                </button>
+              ) : (
+                t('vencimento')
+              )}
+            </TableHead>
             <TableHead>{t('categoria')}</TableHead>
             <TableHead>{t('status')}</TableHead>
             <TableHead className="text-right">Ações</TableHead>

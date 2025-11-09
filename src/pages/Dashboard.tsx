@@ -8,13 +8,14 @@ import { useBoletos } from '@/hooks/useBoletos';
 import { Boleto } from '@/types';
 import { parseDate } from '@/lib/utils';
 import { Layout } from '@/components/Layout';
-import { BoletoTable } from '@/components/BoletoTable';
+import { BoletoTable, SortField, SortDirection } from '@/components/BoletoTable';
 import { BoletoCard } from '@/components/BoletoCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { BoletoModal } from '@/components/BoletoModal';
 import { DeleteBoletoModal } from '@/components/DeleteBoletoModal';
 import { ReceiptModal } from '@/components/ReceiptModal';
 import { DateRangePicker } from '@/components/DateRangePicker';
+import { PaginationControls } from '@/components/PaginationControls';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -80,6 +81,8 @@ const Dashboard = () => {
   const { t } = useTranslation();
   const [status, setStatus] = useState<string>('all');
   const [page, setPage] = useState(0);
+  const [sortBy, setSortBy] = useState<SortField>('id');
+  const [direction, setDirection] = useState<SortDirection>('desc');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedBoleto, setSelectedBoleto] = useState<Boleto | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -95,10 +98,10 @@ const Dashboard = () => {
     return format(date, 'dd/MM/yyyy');
   };
 
-  // Reset page when filters change
+  // Reset page when filters or sorting change
   useEffect(() => {
     setPage(0);
-  }, [status, dateRange]);
+  }, [status, dateRange, sortBy, direction]);
 
   const { data, isLoading, error } = useBoletos({
     status: status === 'all' ? undefined : status,
@@ -106,6 +109,8 @@ const Dashboard = () => {
     size: 10,
     dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
     dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
+    sortBy,
+    direction,
   });
 
   const handleMarkPaid = (boleto: Boleto) => {
@@ -152,6 +157,17 @@ const Dashboard = () => {
     setReceiptBoleto(null);
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      // Toggle direction if clicking the same field
+      setDirection(direction === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field with default descending direction
+      setSortBy(field);
+      setDirection('desc');
+    }
+  };
+
   const handleBoletoSuccess = (boleto: Boleto) => {
     // Manually update the cache for instant update
     const filters = {
@@ -160,6 +176,8 @@ const Dashboard = () => {
       size: 10,
       dataInicio: dateRange?.from ? formatDateForAPI(dateRange.from) : undefined,
       dataFim: dateRange?.to ? formatDateForAPI(dateRange.to) : undefined,
+      sortBy,
+      direction,
     };
     queryClient.setQueryData(['boletos', filters], (oldData: any) => {
       if (!oldData || !oldData.data) return oldData;
@@ -331,6 +349,9 @@ const Dashboard = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewReceipt={handleViewReceipt}
+              sortBy={sortBy}
+              direction={direction}
+              onSort={handleSort}
             />
 
             {/* Mobile Cards */}
@@ -348,27 +369,12 @@ const Dashboard = () => {
             </div>
 
             {/* Pagination */}
-            {data.meta.totalPages > 1 && (
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  Anterior
-                </Button>
-                <span className="flex items-center px-4 text-sm text-muted-foreground">
-                  Página {page + 1} de {data.meta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= data.meta.totalPages - 1}
-                >
-                  Próxima
-                </Button>
-              </div>
-            )}
+            <PaginationControls
+              currentPage={page}
+              total={data.meta.total}
+              size={data.meta.size}f
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

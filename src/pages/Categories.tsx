@@ -10,6 +10,7 @@ import { Layout } from '@/components/Layout';
 import { CategoryTable } from '@/components/CategoryTable';
 import { CategoryModal } from '@/components/CategoryModal';
 import { DeleteCategoryModal } from '@/components/DeleteCategoryModal';
+import { PaginationControls } from '@/components/PaginationControls';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -195,27 +196,11 @@ const Categories = () => {
             </div>
 
             {/* Pagination */}
-            {data.meta.totalPages > 1 && (
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  {t('anterior')}
-                </Button>
-                <span className="flex items-center px-4 text-sm text-muted-foreground">
-                  {t('pagina')} {page + 1} {t('de')} {data.meta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= data.meta.totalPages - 1}
-                >
-                  {t('proxima')}
-                </Button>
-              </div>
-            )}
+            <PaginationControls
+              currentPage={page}
+              totalPages={data.meta.totalPages}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

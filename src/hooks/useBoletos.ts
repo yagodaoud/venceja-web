@@ -9,6 +9,8 @@ interface BoletoFilters {
   size?: number;
   dataInicio?: string; // DD/MM/YYYY format
   dataFim?: string; // DD/MM/YYYY format
+  sortBy?: string;
+  direction?: 'asc' | 'desc';
 }
 
 export const useBoletos = (filters: BoletoFilters = {}) => {
@@ -21,6 +23,8 @@ export const useBoletos = (filters: BoletoFilters = {}) => {
       if (filters.dataFim) params.append('dataFim', filters.dataFim);
       params.append('page', String(filters.page || 0));
       params.append('size', String(filters.size || 10));
+      params.append('sortBy', filters.sortBy || 'id');
+      params.append('direction', filters.direction || 'desc');
 
       const { data } = await api.get<PaginatedResponse<Boleto>>(`/boletos?${params}`);
       return data;
