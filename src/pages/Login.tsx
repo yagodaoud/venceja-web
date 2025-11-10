@@ -48,8 +48,11 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+          {/* <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
             <span className="text-3xl font-bold">V</span>
+          </div> */}
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl">
+            <img src="/logo.png" alt="VenceJá" className="w-16 h-16" />
           </div>
           <CardTitle className="text-3xl font-bold text-primary">VenceJá</CardTitle>
           <CardDescription className="text-base">

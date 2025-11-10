@@ -68,8 +68,11 @@ export const Layout = ({ children }: LayoutProps) => {
               {isMobileMenuOpen ? <X /> : <Menu />}
             </Button>
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              {/* <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <span className="text-xl font-bold">V</span>
+              </div> */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg">
+                <img src="/logo.png" alt="VenceJá" className="h-10 w-10" />
               </div>
               <span className="text-xl font-bold text-primary">VenceJá</span>
             </Link>
