@@ -1,4 +1,4 @@
-export type BoletoStatus = 'PENDENTE' | 'VENCIDO' | 'PAGO';
+export type BoletoStatus = "PENDENTE" | "VENCIDO" | "PAGO";
 
 export interface BoletoCategoria {
   id: number;
@@ -35,7 +35,10 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   data: {
-    token: string;
+    accessToken: string;
+    refreshToken: string;
+    tokenType?: string;
+    expiresIn?: number;
     user: User;
   };
 }

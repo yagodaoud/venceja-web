@@ -1,11 +1,13 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User } from '@/types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { User } from "@/types";
 
 interface AuthState {
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User | null;
-  setAuth: (token: string, user: User) => void;
+  setAuth: (accessToken: string, refreshToken: string, user: User) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
 }
@@ -13,20 +15,28 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      token: null,
+      accessToken: null,
+      refreshToken: null,
       user: null,
-      setAuth: (token, user) => {
-        localStorage.setItem('token', token);
-        set({ token, user });
+      setAuth: (accessToken, refreshToken, user) => {
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("refresh_token", refreshToken);
+        set({ accessToken, refreshToken, user });
+      },
+      setTokens: (accessToken, refreshToken) => {
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("refresh_token", refreshToken);
+        set({ accessToken, refreshToken });
       },
       logout: () => {
-        localStorage.removeItem('token');
-        set({ token: null, user: null });
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        set({ accessToken: null, refreshToken: null, user: null });
       },
-      isAuthenticated: () => !!get().token,
+      isAuthenticated: () => !!get().accessToken,
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
     }
   )
 );

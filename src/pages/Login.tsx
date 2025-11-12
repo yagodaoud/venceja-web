@@ -34,8 +34,10 @@ const Login = () => {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      const response = await api.post<LoginResponse>('/auth/login', data);
-      setAuth(response.data.data.token, response.data.data.user);
+  const response = await api.post<LoginResponse>('/auth/login', data);
+  // Backend now returns accessToken and refreshToken
+  const { accessToken, refreshToken, user } = response.data.data;
+  setAuth(accessToken, refreshToken, user);
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {
